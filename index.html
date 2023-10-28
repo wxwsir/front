@@ -97,6 +97,9 @@
             position: relative;
             margin-bottom: 10px;
             text-align: center;
+            scroll-snap-type: y mandatory; /*按Y轴纵向滚动*/
+            overflow-y: scroll; /*当Y值变化时采取滚动处理*/
+            overflow-x: hidden; /*隐藏横行滚动*/
         }
 
         .text-muted {
@@ -111,10 +114,16 @@
         a {
             text-decoration: none;
         }
+        .pages {
+            scroll-snap-align: start; /*每次滚动后停在下一页面的开始位置*/
+            height: 100vh;/*纵向满屏*/
+            width: 100vw;/*横向满屏*/
+        }
     </style>
 </head>
 
 <body>
+
     <main>
         <h1>语音合成</h1>
         <div>
@@ -132,16 +141,27 @@
             <button onclick="downloadAudio()">下载音频</button>
         </div>
         <audio id="audioPlayer" controls></audio>
+        <hr>
+        <h1>翻译官</h1>
+        <div class="pages">
+            <div id="app">
+                <el-input style="color: #000; font-weight: 600; font-size: 20px;" type="textarea" :rows="5" v-model="textarea" placeholder="请输入需要翻译的内容"></el-input>
+                <el-button style="margin: 20px 0;" type="primary" @click="goTranslate">翻译</el-button>
+                <el-button style="margin: 20px 0;" type="primary" @click="reset">重置</el-button>
+                <el-input style="color: #000; font-weight: 600; font-size: 20px;" readonly type="textarea" :rows="5" v-model="result" placeholder="翻译结果"></el-input>
+            </div>
+        </div>
     </main>
 
 
 
     <footer class="footer">
         <div class="container text-center">
-            <p>本程序基于Microsoft Azure，开源于<a href="https://github.com/x-dr/tts" target="_blank">GitHub</a></p>
+            <p>本程序基于Microsoft Azure，开源于<a href="https://github.com/x-dr/tts" target="_blank">GItHub</a></p>
         </div>
     </footer>
 
+    <!--  引入语音合成api -->
     <script>
         const voiceStyles = [{ "LocalName": "晓辰", "ShortName": "zh-CN-XiaochenNeural", "VoiceStyleNames": [""] }, { "LocalName": "晓晓", "ShortName": "zh-CN-XiaoxiaoNeural", "VoiceStyleNames": ["assistant", "chat", "customerservice", "newscast", "affectionate", "angry", "calm", "cheerful", "disgruntled", "fearful", "gentle", "lyrical", "sad", "serious", "poetry-reading", "friendly", "Default"] }, { "LocalName": "晓萱", "ShortName": "zh-CN-XiaoxuanNeural", "VoiceStyleNames": ["calm", "fearful", "cheerful", "disgruntled", "serious", "angry", "gentle", "depressed", "Default"] }, { "LocalName": "晓涵", "ShortName": "zh-CN-XiaohanNeural", "VoiceStyleNames": ["calm", "fearful", "cheerful", "disgruntled", "serious", "angry", "sad", "gentle", "affectionate", "embarrassed", "Default"] }, { "LocalName": "晓甄", "ShortName": "zh-CN-XiaozhenNeural", "VoiceStyleNames": ["angry", "disgruntled", "cheerful", "fearful", "sad", "serious", "Default"] }, { "LocalName": "云健", "ShortName": "zh-CN-YunjianNeural", "VoiceStyleNames": ["narration-relaxed", "sports-commentary", "sports-commentary-excited", "angry", "disgruntled", "cheerful", "sad", "serious", "depressed", "documentary-narration", "Default"] }, { "LocalName": "晓颜", "ShortName": "zh-CN-XiaoyanNeural", "VoiceStyleNames": [""] }, { "LocalName": "晓伊", "ShortName": "zh-CN-XiaoyiNeural", "VoiceStyleNames": ["angry", "disgruntled", "affectionate", "cheerful", "fearful", "sad", "embarrassed", "serious", "gentle", "Default"] }, { "LocalName": "云皓", "ShortName": "zh-CN-YunhaoNeural", "VoiceStyleNames": ["advertisement-upbeat", "Default"] }, { "LocalName": "曉佳（香港）", "ShortName": "zh-HK-HiuGaaiNeural", "VoiceStyleNames": [""] }, { "LocalName": "晓妮（陕西）", "ShortName": "zh-CN-shaanxi-XiaoniNeural", "VoiceStyleNames": [""] }, { "LocalName": "晓双", "ShortName": "zh-CN-XiaoshuangNeural", "VoiceStyleNames": ["chat", "Default"] }, { "LocalName": "晓梦", "ShortName": "zh-CN-XiaomengNeural", "VoiceStyleNames": ["chat", "Default"] }, { "LocalName": "云枫", "ShortName": "zh-CN-YunfengNeural", "VoiceStyleNames": ["angry", "disgruntled", "cheerful", "fearful", "sad", "serious", "depressed", "Default"] }, { "LocalName": "云泽", "ShortName": "zh-CN-YunzeNeural", "VoiceStyleNames": ["calm", "fearful", "cheerful", "disgruntled", "serious", "angry", "sad", "depressed", "documentary-narration", "Default"] }, { "LocalName": "曉臻（台湾）", "ShortName": "zh-TW-HsiaoChenNeural", "VoiceStyleNames": [""] }, { "LocalName": "晓北（辽宁）", "ShortName": "zh-CN-liaoning-XiaobeiNeural", "VoiceStyleNames": [""] }, { "LocalName": "晓秋", "ShortName": "zh-CN-XiaoqiuNeural", "VoiceStyleNames": [""] }, { "LocalName": "云野", "ShortName": "zh-CN-YunyeNeural", "VoiceStyleNames": ["embarrassed", "calm", "fearful", "cheerful", "disgruntled", "serious", "angry", "sad", "Default"] }, { "LocalName": "云希（四川）", "ShortName": "zh-CN-sichuan-YunxiNeural", "VoiceStyleNames": [""] }, { "LocalName": "晓睿", "ShortName": "zh-CN-XiaoruiNeural", "VoiceStyleNames": ["calm", "fearful", "angry", "sad", "Default"] }, { "LocalName": "云希", "ShortName": "zh-CN-YunxiNeural", "VoiceStyleNames": ["narration-relaxed", "embarrassed", "fearful", "cheerful", "disgruntled", "serious", "angry", "sad", "depressed", "chat", "assistant", "newscast", "Default"] }, { "LocalName": "雲哲（台湾）", "ShortName": "zh-TW-YunJheNeural", "VoiceStyleNames": [""] }, { "LocalName": "晓悠", "ShortName": "zh-CN-XiaoyouNeural", "VoiceStyleNames": [""] }, { "LocalName": "云夏", "ShortName": "zh-CN-YunxiaNeural", "VoiceStyleNames": ["calm", "fearful", "cheerful", "angry", "sad", "Default"] }, { "LocalName": "云登（河南）", "ShortName": "zh-CN-henan-YundengNeural", "VoiceStyleNames": [""] }, { "LocalName": "云扬", "ShortName": "zh-CN-YunyangNeural", "VoiceStyleNames": ["customerservice", "narration-professional", "newscast-casual", "Default"] }, { "LocalName": "曉雨（台湾）", "ShortName": "zh-TW-HsiaoYuNeural", "VoiceStyleNames": [""] }, { "LocalName": "雲龍（香港）", "ShortName": "zh-HK-WanLungNeural", "VoiceStyleNames": [""] }, { "LocalName": "晓墨", "ShortName": "zh-CN-XiaomoNeural", "VoiceStyleNames": ["embarrassed", "calm", "fearful", "cheerful", "disgruntled", "serious", "angry", "sad", "depressed", "affectionate", "gentle", "envious", "Default"] }, { "LocalName": "曉曼（香港）", "ShortName": "zh-HK-HiuMaanNeural", "VoiceStyleNames": [""] }, { "LocalName": "晓翔（山东）", "ShortName": "zh-CN-shandong-YunxiangNeural", "VoiceStyleNames": [""] }]
         const voiceSelect = document.getElementById("voiceSelect");
@@ -217,6 +237,70 @@
             document.body.removeChild(link);
         }
     </script>
+
+    <!--  引入翻译api -->
+    <!-- 开发环境版本，包含了有帮助的命令行警告 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <!-- import JavaScript -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="http://apps.bdimg.com/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="./md5.js"></script>
+    <script type="text/javascript">
+        new Vue({
+            el: '#app',
+            data: function () {
+                return {
+                    textarea: '',
+                    result: ''
+                }
+            },
+            mounted: function () {
+                // this.translate()
+            },
+            methods: {
+                //  百度翻译入口
+                translate: function (query) {
+                    var appid = '20231028001861818'
+                    var key = 'yiKiIGvmsPFFVXorZEKZ'
+                    var salt = (new Date).getTime()
+                    var query = query
+                    // 多个query可以用\n连接  如 query='apple\norange\nbanana\npear'
+                    var from = 'auto'
+                    var to = 'zh'
+                    var str1 = appid + query + salt + key
+                    var sign = MD5(str1)
+                    $.ajax({
+                        url: 'http://api.fanyi.baidu.com/api/trans/vip/translate',
+                        type: 'get',
+                        dataType: 'jsonp',
+                        data: {
+                            q: query,
+                            appid: appid,
+                            salt: salt,
+                            from: from,
+                            to: to,
+                            sign: sign
+                        },
+                        success: (data) => {
+                            this.result = data.trans_result[0].dst
+
+                        }
+                    });
+                },
+                goTranslate : function() {
+                    if (this.textarea.length === 0) return
+                    this.translate(this.textarea)
+                },
+                reset: function (){
+                    this.textarea = '',
+                    this.result = ''
+                }
+            }
+        })
+
+    </script>
+
+
 </body>
 
 </html>
