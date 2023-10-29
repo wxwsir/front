@@ -148,7 +148,7 @@
                 <el-input style="color: #000; font-weight: 600; font-size: 20px;" type="textarea" :rows="5" v-model="textarea" placeholder="请输入需要翻译的内容"></el-input>
                 <el-button style="margin: 20px 0;" type="primary" @click="goTranslate">翻译</el-button>
                 <el-button style="margin: 20px 0;" type="primary" @click="reset">重置</el-button>
-                <el-input style="color: #000; font-weight: 600; font-size: 20px;" readonly type="textarea" :rows="5" v-model="result" placeholder="翻译结果"></el-input>
+                <el-input style="color: #000; font-weight: 600; font-size: 20px;" readonly type="textarea" :rows="5" id="dstText" name="dstText" placeholder="翻译结果"></el-input>
             </div>
         </div>
     </main>
@@ -243,8 +243,8 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
     <!-- import JavaScript -->
     <script src="https://unpkg.com/element-ui/lib/index.js"></script>
-    <script src="http://apps.bdimg.com/libs/jquery/1.9.1/jquery.min.js"></script>
-    <script src="https://raw.githubusercontent.com/wxwsir/front/main/md5.js"></script>
+    <script src="https://apps.bdimg.com/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="md5.js"></script>
     <script type="text/javascript">
         new Vue({
             el: '#app',
@@ -264,27 +264,30 @@
                     var key = 'yiKiIGvmsPFFVXorZEKZ'
                     var salt = (new Date).getTime()
                     var query = query
-                    // 多个query可以用\n连接  如 query='apple\norange\nbanana\npear'
                     var from = 'auto'
-                    var to = 'zh'
+                    var to = 'auto'
                     var str1 = appid + query + salt + key
                     var sign = MD5(str1)
                     $.ajax({
                         url: 'http://api.fanyi.baidu.com/api/trans/vip/translate',
                         type: 'get',
+                        async:false,
                         dataType: 'jsonp',
                         data: {
                             q: query,
+                            from: from,   //源语言，英文
+                            to: to,       //翻译的语言，中文
                             appid: appid,
                             salt: salt,
-                            from: from,
-                            to: to,
                             sign: sign
                         },
-                        success: (data) => {
+                        success: function(data) {
                             console.log(data)
-                            this.result = data.trans_result[0].dst
-
+                            $("#dstText").empty() ;
+                            for ( var i = 0 ; i < data.trans_result.length ; i++ )
+                            {
+                                $("#dstText").append( data.trans_result[i].dst  +" <br />") ;
+                            }
                         }
                     });
                 },
@@ -300,7 +303,6 @@
         })
 
     </script>
-
 
 </body>
 
